@@ -1,0 +1,389 @@
+-------------------String functions-----------------------
+--concat
+select 'Employee name is ' || ename FROM EMP;
+select concat('Employee name is ', ename) FROM EMP;
+select concat('Employee name is ', ename) Details FROM EMP;
+
+--upper
+select upper('hello') as UPPER from dual;
+
+--lower
+select lower('HELLO') as UPPER from dual;
+
+--substr
+select SUBSTR('ABCDEFG',3,4) from dual;  -- here 3 is start location, and 4 is the length of a substring
+select SUBSTR('ABCDEFG',-3,2) from dual;
+
+--length
+select length(ename) as Length_of_Name from emp;
+
+-- instr
+select * from emp;
+select instr(ename, 'S', 1, 1) from emp;
+
+-- multiple functions in a single SQL statement
+select concat(lower(ename), ' is the name') from emp;
+select concat(lower(ename), upper(' is the name')) from emp where deptno = 20;
+
+
+--lpad
+select lpad(ename, 10, 'XX') from emp;
+
+--rpad
+select rpad(ename, 10, 'XX') from emp;
+
+--replace
+select replace(ename, 'S', 'L') from emp;
+
+--trim
+select trim(' SQL_course ') FROM DUAL;
+select length(' SQL_course ') FROM DUAL;
+select length(trim(' SQL_course ')) FROM DUAL;
+
+----ltrim
+select ltrim(' SQL_course ') FROM DUAL;
+select length(' SQL_course ') FROM DUAL;
+select length(ltrim(' SQL_course ')) FROM DUAL;
+
+----rtrim
+select rtrim(' SQL_course ') FROM DUAL;
+select length(' SQL_course ') FROM DUAL;
+select length(rtrim(' SQL_course ')) FROM DUAL;
+
+
+
+
+-------------------General Functions-------------------
+select * from emp;
+
+--nvl
+select nvl(comm, 0) from emp;
+
+--nvl2
+select nvl2(comm, 'not null', 'is null') from emp;
+
+
+--nullif
+select nullif(1,1) from dual;
+select nullif(1,2) from dual;
+
+--coalesce
+select coalesce(null, null, 10, 20, null, 30, 40, 50) from dual;
+
+--case
+SELECT ename, sal, CASE
+ WHEN sal >= 3000 THEN 'big shot'
+ WHEN sal < 3000 THEN 'need more money'
+ END as salary_comment
+FROM emp;
+
+-- regular expressions
+SELECT * FROM emp WHERE REGEXP_LIKE(ename, '^AD|J(AM|AME)S$'); 
+SELECT REGEXP_REPLACE(ename, '(.)', '\1 ') REGEXP_REPLACE FROM emp;  --space after every character 
+SELECT REGEXP_REPLACE(ename, '(M)', 'N') REGEXP_REPLACE FROM emp;  -- replace M with N
+
+
+
+
+----------------------- Number Functions ------------------------------
+--round
+SELECT ROUND (54.339, 2) FROM DUAL; 
+
+--trunc
+SELECT TRUNC(15.79,1) "Truncate" FROM DUAL; 
+
+-- mod
+SELECT MOD (26,11) "ABLOMOV" FROM DUAL; 
+
+SELECT ABS(-15) "ABS" FROM DUAL; 
+
+
+
+-----------------------Conversion Functions------------------------------
+
+SELECT ename, hiredate
+FROM emp
+WHERE hiredate = TO_DATE ( 'May 01, 1981', 'Month dd, YYYY');
+
+SELECT ename, hiredate FROM emp where TO_NUMBER(TO_CHAR(hiredate,'DD')) < 16;
+
+
+
+-----------------------Date Functions----------------------------------
+
+SELECT MONTHS_BETWEEN (TO_DATE ('2022/07/01', 'yyyy/mm/dd'), TO_DATE ('2021/07/01', 'yyyy/mm/dd') ) FROM DUAL;
+
+select ADD_MONTHS ('12-JAN-2022', 3) from dual;
+
+select LAST_DAY ('12-JAN-2022') from dual;
+
+select NEXT_DAY ('19-Aug-2022', 'TUESDAY') from dual;
+
+select sysdate from dual;
+
+select trunc(sysdate, 'Month') from dual;
+select trunc(sysdate, 'year') from dual;
+-------------------------------------------------------------------------------
+
+select * from emp;
+create or replace view view1 as select empno, ename, job from emp where sal < 3000;
+
+select * from view1;
+
+drop view view1;
+
+
+
+----------------------------SQL Joins---------------------------------
+
+-- join
+drop table emp;
+drop table dept;
+create table emp(ename varchar2(20), deptno number);
+
+create table dept(deptno number, dname varchar2(20));
+
+insert into emp values('Abhishek', 10);
+insert into emp values('Bala', 20);
+insert into emp values('Chintan', 30);
+insert into emp values('Deepak', 20);
+insert into emp values('Shyam', 10);
+
+insert into dept values(30, 'IT');
+insert into dept values(40, 'Finance');
+insert into dept values(50, 'consulting');
+
+select * from emp;
+select * from dept;
+
+--cross join
+select * from emp, dept;
+select * from emp cross join dept;
+
+-- natural join
+select * from emp natural join dept;
+
+--using
+select * from emp join dept using(deptno);
+
+--on
+select * from emp join dept on emp.deptno = dept.deptno;
+
+-- inner join
+select emp.ename, emp.deptno, dept.deptno, dept.dname from emp, dept where emp.deptno = dept.deptno;
+select * from emp inner join dept on emp.deptno = dept.deptno;
+
+--aliases
+select e1.ename, e1.deptno, d1.deptno, d1.dname from emp e1, dept d1 where e1.deptno = d1.deptno;
+
+--outer join
+select * from emp full outer join dept on emp.deptno = dept.deptno;
+
+--left outer join (left join)
+select * from emp left outer join dept on emp.deptno = dept.deptno;
+
+--right outer join (right join)
+select * from emp right outer join dept on emp.deptno = dept.deptno;
+
+-- self join
+SELECT worker.ENAME || ' works for ' || manager.ENAME 
+FROM EMP worker, EMP manager
+WHERE worker.MGR = manager.EMPNO
+
+
+
+---------------------------- Analytical functions----------------------------------
+SELECT 	deptno, ename, sal, 
+ROW_NUMBER() OVER (PARTITION BY DEPTNO ORDER BY sal desc) rn,
+RANK() OVER (PARTITION BY DEPTNO order by sal desc) rnk,
+DENSE_RANK() OVER (PARTITION BY DEPTNO order by sal desc) dense_rnk 
+FROM emp;
+
+
+-- LISTAGG
+SELECT deptno, LISTAGG(ename, ',') WITHIN GROUP (ORDER BY ename) AS employees
+FROM EMP
+GROUP BY deptno;
+
+
+-- ROW_NUMBER, RANK, DENSE_RANK
+SELECT 	deptno, ename, sal, 
+    ROW_NUMBER() OVER (PARTITION BY DEPTNO ORDER BY sal desc) rn,
+    RANK() OVER (PARTITION BY DEPTNO order by sal desc) rnk,
+    DENSE_RANK() OVER (PARTITION BY DEPTNO order by sal desc) dense_rnk 
+FROM emp;
+
+--FIRST_VALUE
+SELECT deptno, empno, ename, sal, 
+    FIRST_VALUE(sal) OVER (PARTITION BY DEPTNO ORDER BY sal desc) Highest_salary, 
+    FIRST_VALUE(sal) OVER (PARTITION BY DEPTNO ORDER BY sal) Lowest_salary
+FROM emp;
+
+--LAST_VALUE
+SELECT deptno, empno, ename, sal,
+    LAST_VALUE(sal) OVER (PARTITION BY deptno ORDER BY sal RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) Highest_sal, 
+    LAST_VALUE(sal) OVER (PARTITION BY deptno ORDER BY sal desc RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) Lowest_sal
+FROM emp;
+
+
+select * from emp;
+
+
+------- LEAD and LAG
+drop table sales; 
+
+create table sales(salesman_id number, 
+                   sales_year number,
+                   sales_amt number);
+
+insert into sales values(54, 2016, 44000);
+insert into sales values(54, 2017, 47000);
+insert into sales values(55, 2015, 34000);
+insert into sales values(55, 2016, 38900);
+insert into sales values(55, 2017, 41950);
+insert into sales values(56, 2016, 45000);
+insert into sales values(56, 2017, 47000);
+insert into sales values(57, 2015, 35000);
+insert into sales values(57, 2016, 50000);
+insert into sales values(57, 2017, 53000);
+insert into sales values(59, 2015, 35300);
+insert into sales values(59, 2016, 56000);
+insert into sales values(59, 2017, 49000);
+
+SELECT salesman_id, sales_year, sales_amt, LEAD(sales_amt) 
+    OVER (ORDER BY sales_year) following_year_sales
+    FROM sales
+    WHERE salesman_id = 55;
+    
+SELECT salesman_id, sales_year, sales_amt, LAG(sales_amt) 
+    OVER (ORDER BY sales_year) prev_year_sales
+    FROM sales
+    WHERE salesman_id = 55;
+
+
+
+
+
+select * from EMP;
+---------------------------Subqueries-------------------------------------------------
+
+-- retrieve the count of employees who work in the KINGS's department assuming we don't know KINGS department. (simple subquery) 
+select count(*) 
+from emp
+where deptno = (select deptno from emp where ename = 'KING');
+
+
+-- retireve the details of employee with minimum salary
+select * from emp where sal = (select min(sal) from emp);
+
+
+-- select the count of employees who work in Blake's or Clark's department assuming we don't know their departments. (subquery with IN Clause)
+select count(*) 
+from emp
+where deptno in (select deptno from emp where ename = 'BLAKE' or ename = 'CLARK');
+
+--verify 
+select count(*) from  emp where deptno = 30 or deptno = 10;
+
+
+
+-- select the count of employees whose salary is greater than ALLEN or WARD (subquery with ANY clause)
+select count(*) 
+from emp
+where sal > ANY (select sal from emp where ename = 'ALLEN' or ename = 'WARD');
+
+--verify
+select count(*) from emp where sal > 1250;
+
+-- select the details of employees whose salary is greater than both ALLEN and WARD (subquery with ALL clause)
+select count(*) 
+from emp
+where sal > ALL (select sal from emp where ename = 'ALLEN' or ename = 'WARD');
+
+--verify
+select count(*) from emp where sal > 1600;
+
+-- exists
+select deptno from dept where exists (select * from emp where emp.deptno = dept.deptno);
+select deptno from dept where not exists (select * from emp where emp.deptno = dept.deptno);
+
+
+
+
+
+-------------------Set operators--------------------------
+
+create table dept(deptno number, dname varchar2(10), location varchar2(20));
+
+insert into dept values(10, 'IT', 'HYD');
+insert into dept values(20, 'ACCOUNT', 'MUMBAI');
+insert into dept values(50, 'Production', 'PUNE');
+
+--union
+select deptno from emp UNION select deptno from dept;
+
+--union all
+select deptno from emp UNION ALL select deptno from dept;
+
+--intersect
+select deptno from emp INTERSECT select deptno from dept;
+
+--minus
+select deptno from emp MINUS select deptno from dept;
+select deptno from dept MINUS select deptno from emp;
+
+
+
+
+-----------------------------Aggregation---------------------------------
+--count
+select count(sal) from emp; 
+
+--sum
+select sum(sal) from emp; 
+
+--min
+select min(sal) from emp; 
+
+--max
+select max(sal) from emp;
+
+--avg
+select avg(sal) from emp;
+
+--stddev
+select stddev(sal) from emp;
+
+--variance
+select variance(sal) from emp;
+
+--Group by clause
+select deptno, count(sal) from emp group by deptno;
+
+SELECT deptno, job, count(SAL) FROM emp GROUP BY deptno, job;
+
+--having clause
+SELECT deptno, job, count(SAL) FROM emp GROUP BY deptno, job having count(SAL) > 4;
+
+-- putting it all together
+SELECT JOB, SUM(SAL) PAYROLL FROM EMP WHERE JOB NOT LIKE '%GE%' GROUP BY JOB HAVING SUM(SAL) > 13000 ORDER BY SUM(SAL);
+
+
+
+
+-----------Hierarchical Retrieval--------------------
+
+SELECT empno, ename, mgr
+FROM emp
+CONNECT BY PRIOR empno = mgr;
+
+SELECT empno, ename, mgr, LEVEL
+FROM emp
+CONNECT BY PRIOR empno = mgr;
+
+SELECT ename, empno, mgr, LEVEL
+      FROM emp
+      START WITH empno = 7566
+      CONNECT BY PRIOR empno = mgr
+      ORDER SIBLINGS BY ename;
+

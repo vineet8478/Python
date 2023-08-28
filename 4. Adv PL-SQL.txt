@@ -1,0 +1,572 @@
+select * from emp;
+
+
+--------------------------- EXCEPTION HANDLING----------------------------------------------------
+
+-- demonstration of PL-SQL block without exception handling block 
+DECLARE 
+    v_record emp%rowtype;
+BEGIN
+    --select * into v_record from emp where empno = 7839; -- this works
+    select * into v_record from emp where empno = 7899; -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Employee Name is: ' || v_record.ename);
+END;
+
+
+
+-- PL-SQL block with Named System Exception Handling block (NO_DATA_FOUND)
+DECLARE 
+    v_record emp%rowtype;
+BEGIN
+    select * into v_record from emp where empno = 7839; -- this works
+    --select * into v_record from emp where empno = 7899; -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Employee Name is: ' || v_record.ename);
+EXCEPTION 
+    WHEN NO_DATA_FOUND
+    THEN
+        DBMS_OUTPUT.PUT_LINE('Employee Does not Exist..!!');
+END;
+
+
+
+
+-- PL-SQL block with Named System Exception Handling block (TOO_MANY_ROWS)
+DECLARE 
+    v_record emp%rowtype;
+BEGIN
+    --select * into v_record from emp where empno = 7839; -- this works
+    select * into v_record from emp where job = 'MANAGER'; -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Employee Name is: ' || v_record.ename);
+EXCEPTION 
+    WHEN TOO_MANY_ROWS
+    THEN
+        DBMS_OUTPUT.PUT_LINE('Exists more than one such employees..!!');
+END;
+
+
+
+
+-- PL-SQL block with Named System Exception Handling block (Multiple Exception Blocks)
+DECLARE 
+    v_var number;
+    v_record emp%rowtype;
+BEGIN
+    select * into v_record from emp where empno = 7839; -- this works
+    --select * into v_record from emp where job = 'MANAGER'; -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Employee Name is: ' || v_record.ename);
+    
+    select * into v_record from emp where empno = 7839; -- this works
+    -- select * into v_record from emp where empno = 7899; -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Employee Name is: ' || v_record.ename);
+    
+    v_var := to_number('10'); -- this works
+    --v_var :=  to_number('abc10'); -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Number is: ' || v_var);
+EXCEPTION
+    WHEN NO_DATA_FOUND
+    THEN
+        DBMS_OUTPUT.PUT_LINE('Employee Does not Exist..!!');
+        
+    WHEN TOO_MANY_ROWS
+    THEN
+        DBMS_OUTPUT.PUT_LINE('Exists more than one such employees..!!');
+        
+    WHEN OTHERS
+    THEN
+        DBMS_OUTPUT.PUT_LINE('Invalid Number..!!');
+END;
+
+
+
+--PL-SQL block with UNNAMED SYSTEM EXCEPTION
+DECLARE
+    v_var number; 
+    INVALID_NUMBER EXCEPTION;
+    PRAGMA EXCEPTION_INIT (INVALID_NUMBER, -6502);
+BEGIN
+    v_var := to_number('10'); -- this works
+    --v_var :=  to_number('abc10'); -- this doesn't work
+    DBMS_OUTPUT.PUT_LINE('Number is: ' || v_var);
+EXCEPTION
+  WHEN INVALID_NUMBER
+  THEN
+   DBMS_OUTPUT.PUT_LINE('Invalid Number');
+END;
+
+
+--PL-SQL block with User Defined Exception
+DECLARE
+    v_salary number := -5500; 
+    INVALID_SALARY EXCEPTION;
+BEGIN
+    IF v_salary < 0 THEN
+        RAISE INVALID_SALARY;
+    END IF;
+    update emp set sal = v_salary where empno = 7839;
+    DBMS_OUTPUT.PUT_LINE('Salary updated successfully..!!');
+EXCEPTION
+  WHEN INVALID_SALARY
+  THEN
+   --DBMS_OUTPUT.PUT_LINE('Salary must be a positive number..!!');
+   RAISE_APPLICATION_ERROR(-20100, 'Salary must be a positive number..!!'); -- error number must be from -20000 to -20999
+END;
+
+
+
+----------------------------------CURSORS----------------------------------------------------
+
+-- simple cursor to read 5 records from table
+DECLARE
+    v_counter number := 1;
+    v_empno emp.empno%type;
+    v_ename emp.ename%type;
+    CURSOR emp_cursor IS SELECT empno, ename FROM emp;
+BEGIN
+    OPEN emp_cursor;
+    LOOP
+        FETCH emp_cursor into v_empno, v_ename;
+        DBMS_OUTPUT.PUT_LINE('ID of Employee is: ' || v_empno);
+        DBMS_OUTPUT.PUT_LINE('Name of Employee is: ' || v_ename);
+        v_counter := v_counter + 1;
+        EXIT WHEN v_counter > 5;
+    END LOOP;
+    CLOSE emp_cursor;
+END;
+
+
+
+
+-- demonstration of cursor properties
+DECLARE
+    v_counter number :=1;
+    v_empno emp.empno%type;
+    v_ename emp.ename%type;
+    CURSOR emp_cursor IS SELECT empno, ename FROM emp;
+BEGIN
+    IF emp_cursor%ISOPEN THEN
+        DBMS_OUTPUT.PUT_LINE('Before opening: Cursor is open..!!');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Before opening: Cursor is closed..!!');
+    END IF;
+    
+    OPEN emp_cursor;
+    
+    IF emp_cursor%ISOPEN THEN
+        DBMS_OUTPUT.PUT_LINE('After opening: Cursor is open..!!');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('After opening: Cursor is closed..!!');
+    END IF;
+    
+    LOOP
+        FETCH emp_cursor into v_empno, v_ename;
+        
+        IF emp_cursor%FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Found: TRUE');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Found: FALSE');
+        END IF;
+        
+        IF emp_cursor%NOTFOUND THEN
+            DBMS_OUTPUT.PUT_LINE('NOT Found: TRUE');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('NOT Found: FALSE');
+        END IF;
+        
+        v_counter := v_counter + 1;
+        EXIT WHEN v_counter > 5;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE('Total Number of Rows retuirned by cursor: ' || emp_cursor%rowcount);
+    
+    IF emp_cursor%ISOPEN THEN
+        DBMS_OUTPUT.PUT_LINE('Before Closing: Cursor is open..!!');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Before Closing: Cursor is closed..!!');
+    END IF;
+    
+    CLOSE emp_cursor;
+    
+    IF emp_cursor%ISOPEN THEN
+        DBMS_OUTPUT.PUT_LINE('After closing: Cursor is open..!!');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('After closing: Cursor is closed..!!');
+    END IF;
+END;
+
+
+
+
+--usage of %NOTFOUND
+DECLARE
+    v_record emp%rowtype;
+    CURSOR emp_cursor IS SELECT * FROM emp;
+BEGIN
+    OPEN emp_cursor;
+    LOOP
+        FETCH emp_cursor into v_record;
+        DBMS_OUTPUT.PUT_LINE('ID of Employee is: ' || v_record.empno);
+        DBMS_OUTPUT.PUT_LINE('Name of Employee is: ' || v_record.ename);
+        EXIT WHEN emp_cursor%NOTFOUND; -- using %notfound for exit condition
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE('Total Number of Rows retuirned by cursor: ' || emp_cursor%rowcount);
+    
+    CLOSE emp_cursor;
+END;
+
+
+
+--usage of %ROWCOUNT for exit condition
+DECLARE
+    v_record emp%rowtype;
+    CURSOR emp_cursor IS SELECT * FROM emp;
+BEGIN
+    OPEN emp_cursor;
+    LOOP
+        FETCH emp_cursor into v_record;
+        DBMS_OUTPUT.PUT_LINE('ID of Employee is: ' || v_record.empno);
+        DBMS_OUTPUT.PUT_LINE('Name of Employee is: ' || v_record.ename);
+        EXIT WHEN emp_cursor%ROWCOUNT > 4; -- using %ROWCOUNT for exit condition
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE('Total Number of Rows retuirned by cursor: ' || emp_cursor%rowcount);
+    
+    CLOSE emp_cursor;
+END;
+
+
+--usage of %ROWCOUNT and %NOTFOUND for exit
+DECLARE
+    v_record emp%rowtype;
+    CURSOR emp_cursor IS SELECT * FROM emp;
+BEGIN
+    OPEN emp_cursor;
+    LOOP
+        FETCH emp_cursor into v_record;
+        DBMS_OUTPUT.PUT_LINE('ID of Employee is: ' || v_record.empno);
+        DBMS_OUTPUT.PUT_LINE('Name of Employee is: ' || v_record.ename);
+        EXIT WHEN emp_cursor%ROWCOUNT > 24 or emp_cursor%NOTFOUND; -- using both the conditions for exit
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE('Total Number of Rows retuirned by cursor: ' || emp_cursor%rowcount);
+    
+    CLOSE emp_cursor;
+END;
+
+
+-- create record of cursor type
+DECLARE
+    CURSOR emp_cursor IS
+    SELECT empno, ename FROM emp;
+    emp_record emp_cursor%ROWTYPE;
+BEGIN
+    OPEN emp_cursor;
+    LOOP
+        FETCH emp_cursor INTO emp_record;
+        DBMS_OUTPUT.PUT_LINE('Number: ' || emp_record.empno);
+        DBMS_OUTPUT.PUT_LINE('Name: ' || emp_record.ename);
+    EXIT WHEN emp_cursor%NOTFOUND;
+    END LOOP;
+END;
+
+
+
+select * from emp;
+--Accessing Property of SQL Cursor
+DECLARE
+    v_empno emp.empno%TYPE := 7698;
+    rows_deleted varchar2(100) := ' ';
+BEGIN
+    DELETE FROM emp WHERE empno = v_empno;
+    rows_deleted := (SQL % ROWCOUNT || ' row(s) deleted.');
+    DBMS_OUTPUT.PUT_LINE(rows_deleted);
+END;
+
+
+-- CURSORS with parameters
+DECLARE
+    CURSOR emp_cursor(p_deptno NUMBER) IS
+    SELECT empno, ename, deptno
+    FROM   emp
+    WHERE  deptno = p_deptno;
+BEGIN
+    OPEN emp_cursor(10);
+    --
+    CLOSE emp_cursor;
+    
+    OPEN emp_cursor(20);
+    --
+    CLOSE emp_cursor;
+END;
+
+
+select * from emp where deptno = 10;
+--Advanced Cursors concept (increament the salary of employees beloning to deptno 10 except president by 10%)
+DECLARE
+    CURSOR sal_cursor IS 
+        SELECT sal, job 
+        FROM   emp
+        WHERE  deptno = 10
+    FOR UPDATE OF sal NOWAIT; 
+BEGIN 
+    FOR emp_record IN sal_cursor 
+    LOOP 
+        IF emp_record.job != 'PRESIDENT' THEN 
+  	        UPDATE emp SET sal = emp_record.sal * 1.10
+  	        WHERE CURRENT OF sal_cursor; 
+        END IF; 
+    END LOOP; 
+END;
+
+
+----------------------------------Subprograms--------------------------------------
+
+-- simple procedure for update operation (without any parameters/arguments)
+create or replace procedure p1 is
+begin
+update emp set sal=sal+100;
+commit;
+end p1;
+
+desc p1;
+exec p1;
+select * from emp;
+
+
+-- procedure with one input parameter
+create or replace procedure p2 (p_deptno IN emp.deptno%type) is
+begin
+update emp set sal=sal*1.2 where deptno=p_deptno;
+if sql%rowcount=0 then
+	raise_application_error(-20001, 'Invalid Dept No.');
+end if;
+exception
+when others then
+	if sqlcode=-20001 then
+	null;
+	end if;
+end p2;
+
+desc p2;
+
+exec p2(20);
+
+select * from emp;
+
+
+------------------Procedure with IN and OUT parameters
+--defining
+create or replace procedure p3(p_deptno IN emp.deptno%type,
+p_job IN emp.job%type, p_tsal OUT number, p_hct OUT number) is
+begin
+select sum(sal), count(*) into p_tsal, p_hct from emp where deptno=p_deptno and job=p_job;
+end p3;
+
+desc p3;
+
+--calling it 
+declare
+    v_tsal number;
+    v_hct number;
+begin
+    p3(20,'CLERK',v_tsal,v_hct);
+    dbms_output.put_line(v_tsal||'   '||v_hct);
+end;
+
+--verify output
+select * from emp where job='CLERK' AND deptno=20;
+
+
+------------------- procedure with INOUT mode parameter
+create or replace procedure p4(p_text IN OUT varchar2(100)) is
+begin
+p_text:=concat(p_text, '-INDIA');
+end p4;
+
+desc p4;
+
+declare
+x varchar2(100);
+begin
+x:='Deloitte';
+DBMS_OUTPUT.PUT_LINE(x);
+p4(x);
+DBMS_OUTPUT.PUT_LINE(x);
+end;
+
+------------Procedure with default input values
+CREATE OR REPLACE PROCEDURE TEST_PROC(
+       EMP_Name IN VARCHAR2 DEFAULT 'TEST',
+       EMP_ID IN NUMBER DEFAULT 1001) AS
+ BEGIN
+ DBMS_OUTPUT.PUT_LINE('EMP_ID: '|| EMP_ID||'    --      '||'EMP_Name: '||EMP_Name);
+ END;
+ 
+desc TEST_PROC;
+
+EXEC TEST_PROC('JOHN', 2000); -- works
+EXEC TEST_PROC();             -- works
+EXEC TEST_PROC(1500);             -- does not work
+EXEC TEST_PROC(EMP_ID => 1700, EMP_Name => 'MARK');             --works
+EXEC TEST_PROC(EMP_Name => 'MARK');   -- works
+
+
+
+select * from emp;
+
+------------------------ FUNCTIONS ---------------------
+-- defining a function
+create or replace function f_esal(p_eno in emp.empno%type)
+    return emp.sal%type is
+v_sal emp.sal%type:=0;
+begin
+    select sal into v_sal from emp where empno=p_eno;
+    return v_sal;
+exception
+    when no_data_found then
+    return v_sal;
+end;
+
+
+-- calling a function: Alternative-1
+begin
+dbms_output.put_line(f_esal(7839));
+end;
+
+
+-- calling a function: Alternative-2
+declare
+y number;
+begin
+y := f_esal(7902);
+dbms_output.put_line(y);
+end;
+
+-- drop function
+drop function f_esal;
+
+
+
+--------------------- TRIGGER ------------------------
+
+-- purpose: no I,U,D operations on emp table on Mondays
+-- sysdate
+select sysdate from dual;
+
+-- day component of sysdate
+declare
+y char(3);
+begin
+y := upper(to_char(sysdate, 'dy'));
+dbms_output.put_line(y);
+end;
+
+-- create trigger
+create or replace trigger emp_trig before insert or update or delete on emp
+declare
+v_day char(3):=upper(to_char(sysdate, 'dy'));
+begin
+	if v_day='MON' then
+	raise_application_error(-20008, 'Manipulation on EMP table is not allowed on Monday..!!');
+	end if;
+end;
+
+-- give a try
+delete from emp where empno = 7839;
+
+
+
+
+--------Dynamic SQL---------------
+
+
+-------------- Collections----------------
+declare
+type mytab is table of number(3) index by binary_integer;
+v_mytab mytab;
+begin
+for i in 1..10 loop
+	v_mytab(i):=i*i;
+	end loop;
+dbms_output.put_line('Total number of elements: ' || v_mytab.count);
+dbms_output.put_line('Index of first element: ' || v_mytab.first);
+dbms_output.put_line('Index of last element: ' || v_mytab.last);
+
+for i in v_mytab.first..v_mytab.last loop
+dbms_output.put_line(v_mytab(i));
+end loop;
+v_mytab.delete;
+dbms_output.put_line('Total number of elements after deletion: ' || v_mytab.count);
+end;
+
+----------------------NESTED TABLES---------------------------
+
+CREATE TYPE typ_item AS 
+    OBJECT (prodid NUMBER(5),                             
+            price NUMBER(7,2))
+            
+CREATE TYPE typ_item_nst AS TABLE OF typ_item;
+
+
+CREATE TABLE pOrder (ordid NUMBER (5),
+                     supplier NUMBER(5),
+                     requester NUMBER(4),
+                     ordered DATE,
+                     items typ_item_nst)
+                     NESTED TABLE items STORE AS item_stor_tab;
+                     
+
+INSERT INTO pOrder
+VALUES (500, 50, 5000,sysdate,
+        typ_item_nst(typ_item(55, 555),
+        typ_item(56, 566),
+        typ_item(57, 577)));
+        
+INSERT INTO pOrder
+VALUES (800, 80, 8000, sysdate,
+        typ_item_nst(typ_item (88, 888)));
+        
+select * from pOrder;
+
+SELECT items FROM porder;
+
+SELECT p2.ordid, p1.*
+FROM porder p2, TABLE(p2.items) p1;
+
+----------------------- VARRAYS------------
+
+CREATE OR REPLACE TYPE list_of_names IS  
+   VARRAY(10) OF VARCHAR2 (100); 
+   
+DECLARE  
+   happyfamily   list_of_names := list_of_names ();  
+BEGIN  
+   happyfamily.EXTEND (4);  
+   happyfamily (1) := 'Eli';  
+   happyfamily (2) := 'Steven';  
+   happyfamily (3) := 'Chris';  
+   happyfamily (4) := 'Veva';  
+     
+   FOR l_row IN 1 .. happyfamily.COUNT  
+   LOOP  
+      DBMS_OUTPUT.put_line (happyfamily (l_row));  
+   END LOOP;  
+END; 
+
+
+DECLARE  
+   happyfamily   list_of_names := list_of_names ();  
+BEGIN  
+   happyfamily.EXTEND (4);  
+   happyfamily (1) := 'Eli';  
+   happyfamily (2) := 'Steven';  
+   happyfamily (3) := 'Chris';  
+   happyfamily (4) := 'Veva';  
+    
+   FOR rec IN (  SELECT COLUMN_VALUE family_name  
+                   FROM TABLE (happyfamily)  
+               ORDER BY family_name)  
+   LOOP  
+      DBMS_OUTPUT.put_line (rec.family_name);  
+   END LOOP;  
+END;
